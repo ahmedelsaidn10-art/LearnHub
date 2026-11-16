@@ -1,0 +1,19 @@
+{
+  "name": "learnhub",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:css:watch\" \"vite --configLoader runner\"",
+    "css:build": "tailwindcss -i ./css/input.css -o ./css/output.css --minify",
+    "css:watch": "tailwindcss -i ./css/input.css -o ./css/output.css --watch",
+    "build": "npm run css:build && vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "concurrently": "^9.0.0",
+    "tailwindcss": "^4.1.0",
+    "vite": "^6.0.0"
+  }
+}
