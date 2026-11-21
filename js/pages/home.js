@@ -5,7 +5,6 @@ const featuredCourseIds = [
   'modern-web-development',
   'ui-ux-product-design',
   'python-programming',
-  'data-science-foundations',
 ];
 
 const money = new Intl.NumberFormat('en-US', {
