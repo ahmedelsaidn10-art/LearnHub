@@ -7,7 +7,21 @@
   <meta name="theme-color" content="#faf8ff" />
   <meta name="description" content="Explore course details, curriculum, instructor information, and enrollment options on LearnHub." />
   <title>Course Details — LearnHub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script>
+    (() => {
+      const root = document.documentElement;
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('theme');
+      } catch {
+        // Use the system preference when browser storage is unavailable.
+      }
+      const isDark = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
+    })();
+  </script><link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/css/output.css" />
@@ -22,6 +36,20 @@
       <p class="text-body-lg text-on-surface-variant dark:text-slate-400">Loading course details…</p>
     </div>
   </main>
+
+  <dialog id="remove-enrollment-dialog" class="fixed left-1/2 top-1/2 m-0 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-outline-variant/50 bg-surface-container-lowest p-0 text-on-surface shadow-2xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-900 dark:text-white" aria-labelledby="remove-enrollment-title" aria-describedby="remove-enrollment-message">
+    <div class="p-6">
+      <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+        <span class="material-symbols-outlined text-2xl leading-none" aria-hidden="true">delete</span>
+      </div>
+      <h2 id="remove-enrollment-title" class="mb-2 text-headline-sm font-bold">Remove this course?</h2>
+      <p id="remove-enrollment-message" class="mb-6 text-body-md leading-relaxed text-on-surface-variant dark:text-slate-400">Removing a course also removes its lesson progress. Adding it again starts progress over.</p>
+      <div class="flex justify-end gap-3">
+        <button id="cancel-remove-enrollment" class="min-h-11 rounded-xl px-4 py-2 text-label-lg font-medium text-on-surface-variant hover:bg-surface-container dark:text-slate-300 dark:hover:bg-slate-800" type="button">Cancel</button>
+        <button id="confirm-remove-enrollment" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-error px-4 py-2 text-label-lg font-semibold text-white transition hover:opacity-90" type="button"><span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>Remove</button>
+      </div>
+    </div>
+  </dialog>
 
   <site-footer></site-footer>
   <script type="module" src="/js/main.js"></script>

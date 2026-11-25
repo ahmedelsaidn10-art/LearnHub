@@ -12,6 +12,8 @@ function readSavedTheme() {
 function applyTheme(theme) {
   const isDark = theme === 'dark';
   root.classList.toggle('dark', isDark);
+  root.style.colorScheme = isDark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
 
   themeButtons.forEach((button) => {
     button.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);

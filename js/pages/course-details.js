@@ -1,6 +1,15 @@
-import { getCourseById, getCourses } from '../services/course-service.js';
-import { getEnrolledCourseIds, getSavedCourseIds, saveEnrolledCourseIds, saveCourseIds } from '../services/learning-service.js';
-import { getCourseCurriculum, getCourseLessonIds, readCompletedLessons, saveCompletedLessons } from '../utils/course-progress.js';
+import { getCourseById } from '../services/course-service.js';
+import { getCurrentAccount } from '../services/auth-service.js';
+import {
+  addCourseToMyCourses,
+  addCourseToFavorites,
+  getFavorites,
+  getMyCourses,
+  removeCourseFromFavorites,
+  removeCourseFromMyCourses,
+  updateLessonProgress,
+} from '../services/learning-service.js';
+import { redirectToLogin } from '../utils/auth-navigation.js';
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -15,26 +24,27 @@ function escapeHtml(value) {
 }
 
 function courseDetails(course) {
-  // Other catalog courses can use the same page while their full syllabus is being prepared.
-  return course.details ?? {
-    description: `Build practical ${course.category.toLowerCase()} skills with ${course.title}. Follow guided lessons, practice the core ideas, and finish with a project.`,
-    instructorTitle: 'Course instructor',
-    updatedAt: 'Recently updated',
-    language: 'English',
-    subtitles: 'English',
-    repositoryCount: 0,
-    projectCount: 1,
-    outcomes: [
+  const details = course.details || {};
+  return {
+    ...details,
+    description: details.description || `Build practical ${course.category.toLowerCase()} skills with ${course.title}. Follow guided lessons, practice the core ideas, and finish with a project.`,
+    instructorTitle: details.instructorTitle || 'Course instructor',
+    updatedAt: details.updatedAt || 'Recently updated',
+    language: details.language || 'English',
+    subtitles: Array.isArray(details.subtitles) ? details.subtitles : [],
+    repositoryCount: Number(details.repositoryCount) || 0,
+    projectCount: Number(details.projectCount) || 1,
+    outcomes: Array.isArray(details.outcomes) && details.outcomes.length ? details.outcomes : [
       `Understand the core concepts covered in ${course.title}.`,
       `Apply ${course.category.toLowerCase()} techniques in guided exercises.`,
       'Complete a practical project to reinforce what you learned.',
     ],
-    requirements: ['A computer or mobile device with internet access.', 'A willingness to practice and learn.'],
-    curriculum: getCourseCurriculum(course),
+    requirements: Array.isArray(details.requirements) ? details.requirements : [],
+    curriculum: Array.isArray(details.curriculum) ? details.curriculum : [],
   };
 }
 
-function curriculumMarkup(sections, completedLessons) {
+function curriculumMarkup(sections, completedLessons, canTrackProgress) {
   return sections.map((section, index) => `
     <details class="curriculum-section overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-900" ${index === 0 ? 'open' : ''}>
       <summary class="flex cursor-pointer list-none items-center justify-between gap-4 bg-surface-container-low px-5 py-4 transition hover:bg-surface-container dark:bg-slate-800/70 dark:hover:bg-slate-800">
@@ -48,13 +58,16 @@ function curriculumMarkup(sections, completedLessons) {
         </span>
       </summary>
       <ul class="grid gap-3 px-5 py-4 sm:grid-cols-2">
-        ${section.lessons.map((lesson, lessonIndex) => {
-          const lessonId = `section-${index + 1}-lesson-${lessonIndex + 1}`;
+        ${section.lessons.map((lesson) => {
+          const lessonTitle = typeof lesson === 'string' ? lesson : lesson.title;
+          const lessonId = typeof lesson === 'string' ? '' : String(lesson.id);
           const isDone = completedLessons.has(lessonId);
+          const button = canTrackProgress && lessonId
+            ? `<button class="lesson-done-button shrink-0 rounded-lg border px-3 py-1.5 text-label-sm font-semibold transition ${isDone ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary dark:border-slate-600 dark:text-slate-300 dark:hover:border-blue-400 dark:hover:text-blue-300'}" type="button" data-lesson-id="${escapeHtml(lessonId)}" aria-pressed="${isDone}" aria-label="${isDone ? 'Mark as not done' : 'Mark as done'}: ${escapeHtml(lessonTitle)}">${isDone ? 'Done ?' : 'Done'}</button>`
+            : '';
           return `<li class="flex items-center gap-2 text-body-md text-on-surface-variant dark:text-slate-300">
             <span class="material-symbols-outlined text-base ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary dark:text-blue-300'}" aria-hidden="true">${isDone ? 'check_circle' : 'play_circle'}</span>
-            <span class="min-w-0 flex-1">${escapeHtml(lesson)}</span>
-            <button class="lesson-done-button shrink-0 rounded-lg border px-3 py-1.5 text-label-sm font-semibold transition ${isDone ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary dark:border-slate-600 dark:text-slate-300 dark:hover:border-blue-400 dark:hover:text-blue-300'}" type="button" data-lesson-id="${lessonId}" aria-pressed="${isDone}" aria-label="${isDone ? 'Mark as not done' : 'Mark as done'}: ${escapeHtml(lesson)}">${isDone ? 'Done ✓' : 'Done'}</button>
+            <span class="min-w-0 flex-1">${escapeHtml(lessonTitle)}</span>${button}
           </li>`;
         }).join('')}
       </ul>
@@ -66,7 +79,7 @@ function pageMarkup(course, completedLessons) {
   const lessonCount = details.curriculum.reduce((total, section) => total + section.lessons.length, 0);
   const completionPercent = lessonCount ? Math.round((completedLessons.size / lessonCount) * 100) : 0;
   const price = course.price === 0 ? 'Free' : currency.format(course.price);
-  const subtitles = details.subtitles ? `CC: ${escapeHtml(details.subtitles)}` : 'Subtitles available';
+  const subtitles = details.subtitles.length ? `CC: ${escapeHtml(details.subtitles.join(', '))}` : 'Subtitles available';
   const benefits = [
     `${escapeHtml(course.duration)} of on-demand learning`,
     ...(details.repositoryCount ? [`${details.repositoryCount} downloadable code resources`] : []),
@@ -148,7 +161,8 @@ function pageMarkup(course, completedLessons) {
               <div id="course-progress-fill" class="h-full rounded-full bg-primary transition-all duration-300 dark:bg-blue-400" style="width: ${completionPercent}%"></div>
             </div>
           </div>
-          <div id="curriculum-list" class="space-y-3">${curriculumMarkup(details.curriculum, completedLessons)}</div>
+          ${course.is_enrolled ? '' : '<p class="mb-4 rounded-xl bg-primary/5 p-3 text-sm text-on-surface-variant dark:bg-primary/10 dark:text-slate-300">Add this course to My Courses to track lesson completion.</p>'}
+          <div id="curriculum-list" class="space-y-3">${curriculumMarkup(details.curriculum, completedLessons, Boolean(course.is_enrolled))}</div>
         </section>
 
         <section aria-labelledby="requirements-heading">
@@ -196,7 +210,7 @@ function pageMarkup(course, completedLessons) {
               <button id="enroll-toggle-btn" class="mb-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary-container px-5 py-4 text-label-lg font-bold text-white shadow-md transition hover:bg-primary active:scale-[0.99]" type="button">
                 <span class="material-symbols-outlined" aria-hidden="true">school</span><span data-enroll-label>Add to My Courses</span>
               </button>
-              <p class="mb-5 text-center text-label-sm text-on-surface-variant dark:text-slate-400">Enrollment is a local demo and does not process payment.</p>
+              <p class="mb-5 text-center text-label-sm text-on-surface-variant dark:text-slate-400">Add this course to your learning list. No payment is processed here.</p>
 
               <h3 class="mb-3 text-label-lg font-bold text-on-surface dark:text-white">This course includes:</h3>
               <ul class="space-y-3">
@@ -310,53 +324,99 @@ function renderNotFound(root) {
 }
 
 // Bind page-only behaviors after rendering the selected course.
-export function init() {
+export async function init() {
   const root = document.querySelector('#course-details-root');
   if (!root) return;
 
-  const courseId = new URLSearchParams(window.location.search).get('course') || getCourses()[0]?.id;
-  const course = getCourseById(courseId);
+  const courseId = new URLSearchParams(window.location.search).get('course');
+  if (!courseId) {
+    renderNotFound(root);
+    return;
+  }
+
+  let course;
+  try {
+    course = await getCourseById(courseId);
+  } catch (error) {
+    root.setAttribute('aria-busy', 'false');
+    root.innerHTML = `
+      <span class="material-symbols-outlined mb-3 text-5xl text-outline" aria-hidden="true">cloud_off</span>
+      <h1 class="mb-3 text-headline-md font-bold text-on-surface dark:text-white">Could not load this course</h1>
+      <p class="mb-6 text-body-md text-on-surface-variant dark:text-slate-400">${escapeHtml(error.message || 'Check your connection and try again.')}</p>
+      <a class="inline-flex min-h-11 items-center rounded-xl bg-primary-container px-5 py-2.5 text-label-lg font-semibold text-white hover:bg-primary" href="/courses.html">Browse courses</a>`;
+    return;
+  }
   if (!course) {
     renderNotFound(root);
     return;
   }
 
-  document.title = `${course.title} — LearnHub`;
+  let account = null;
+  try {
+    account = await getCurrentAccount();
+  } catch (error) {
+    if (error.status !== 401) showToast(error.message || 'Your account status could not be loaded.');
+  }
+  let isFavorite = false;
+  if (account) {
+    try {
+      isFavorite = (await getFavorites()).some((favorite) => favorite.id === course.id);
+    } catch (error) {
+      if (error.status !== 401) showToast(error.message || 'Your favorites could not be loaded.');
+    }
+
+    try {
+      const enrolledCourse = (await getMyCourses()).find((item) => item.id === course.id);
+      course.is_enrolled = Boolean(enrolledCourse);
+      if (enrolledCourse?.details?.curriculum?.length) {
+        course.details = { ...course.details, curriculum: enrolledCourse.details.curriculum };
+      }
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      showToast(error.message || 'Your enrollment status could not be loaded.');
+    }
+  }
+
+  document.title = `${course.title} ? LearnHub`;
   const details = courseDetails(course);
-  const validLessonIds = new Set(getCourseLessonIds(course));
-  const completedLessons = readCompletedLessons(course.id);
-  completedLessons.forEach((lessonId) => {
-    if (!validLessonIds.has(lessonId)) completedLessons.delete(lessonId);
-  });
-  const totalLessons = validLessonIds.size;
+  const completedLessons = new Set(details.curriculum.flatMap((section) => section.lessons)
+    .filter((lesson) => typeof lesson !== 'string' && lesson.completed === true)
+    .map((lesson) => String(lesson.id)));
+  const totalLessons = details.curriculum.reduce((total, section) => total + section.lessons.length, 0);
   root.innerHTML = pageMarkup(course, completedLessons);
   root.className = '';
   root.setAttribute('aria-busy', 'false');
 
-  // Save each completed lesson by course ID so My Courses can reuse this progress later.
-  const curriculumList = root.querySelector('#curriculum-list');
-  curriculumList.addEventListener('click', (event) => {
+  root.querySelector('#curriculum-list').addEventListener('click', async (event) => {
     const button = event.target.closest('[data-lesson-id]');
     if (!button) return;
-
-    const lessonId = button.dataset.lessonId;
-    const isDone = completedLessons.has(lessonId);
-    const nextCompletedLessons = new Set(completedLessons);
-    if (isDone) nextCompletedLessons.delete(lessonId);
-    else nextCompletedLessons.add(lessonId);
-
-    if (!saveCompletedLessons(course.id, nextCompletedLessons)) {
-      showToast('Could not save lesson progress in this browser.');
+    if (!course.is_enrolled) {
+      if (!account) redirectToLogin();
+      else showToast('Add this course to My Courses before marking lessons done.');
       return;
     }
 
-    completedLessons.clear();
-    nextCompletedLessons.forEach((id) => completedLessons.add(id));
-    updateLessonButton(button, !isDone);
-    updateProgressDisplay(root, completedLessons.size, totalLessons);
+    const lessonId = button.dataset.lessonId;
+    const isDone = completedLessons.has(lessonId);
+    button.disabled = true;
+    try {
+      const result = await updateLessonProgress(course.id, lessonId, !isDone);
+      if (isDone) completedLessons.delete(lessonId);
+      else completedLessons.add(lessonId);
+      const lesson = details.curriculum.flatMap((section) => section.lessons)
+        .find((item) => typeof item !== 'string' && String(item.id) === lessonId);
+      if (lesson) lesson.completed = !isDone;
+      updateLessonButton(button, !isDone);
+      const progress = result?.progress || {};
+      updateProgressDisplay(root, Number(progress.completedLessons) || completedLessons.size, Number(progress.totalLessons) || totalLessons);
+    } catch (error) {
+      if (error.status === 401) redirectToLogin();
+      else showToast(error.message || 'Could not save lesson progress.');
+    } finally {
+      button.disabled = false;
+    }
   });
 
-  // Keep the curriculum controls accessible and update their state as sections open.
   const curriculumSections = [...root.querySelectorAll('.curriculum-section')];
   const toggleAll = root.querySelector('#curriculum-toggle-all');
   const updateToggleAll = () => {
@@ -372,45 +432,85 @@ export function init() {
   });
   updateToggleAll();
 
-  const enrolledCourses = new Set(getEnrolledCourseIds());
   const enrollButtons = [root.querySelector('#enroll-toggle-btn'), root.querySelector('#mobile-enroll-btn')].filter(Boolean);
-  const updateAllEnrollmentButtons = (isEnrolled) => enrollButtons.forEach((button) => updateEnrollment(button, isEnrolled));
-  updateAllEnrollmentButtons(enrolledCourses.has(course.id));
-  const handleEnroll = () => {
-    const isEnrolled = enrolledCourses.has(course.id);
-    if (isEnrolled) enrolledCourses.delete(course.id);
-    else enrolledCourses.add(course.id);
-    if (!saveEnrolledCourseIds([...enrolledCourses])) {
-      showToast('Could not save this change in this browser.');
-      return;
+  const removeDialog = document.querySelector('#remove-enrollment-dialog');
+  const cancelRemoveButton = document.querySelector('#cancel-remove-enrollment');
+  const confirmRemoveButton = document.querySelector('#confirm-remove-enrollment');
+  const removeMessage = document.querySelector('#remove-enrollment-message');
+  let pendingEnrollmentRemoval = false;
+  enrollButtons.forEach((button) => updateEnrollment(button, Boolean(course.is_enrolled)));
+  const saveEnrollment = async (action) => {
+    enrollButtons.forEach((item) => { item.disabled = true; });
+    try {
+      if (action === 'remove') await removeCourseFromMyCourses(course.id);
+      else await addCourseToMyCourses(course.id);
+      course.is_enrolled = action === 'add';
+      window.location.reload();
+      return true;
+    } catch (error) {
+      if (error.status === 401) redirectToLogin();
+      else showToast(error.message || 'Could not update My Courses.');
+      return false;
+    } finally {
+      enrollButtons.forEach((item) => { item.disabled = false; });
     }
-    updateAllEnrollmentButtons(!isEnrolled);
-    showToast(isEnrolled ? 'Course removed from My Courses.' : 'Course added to My Courses.');
   };
-  enrollButtons.forEach((button) => button.addEventListener('click', handleEnroll));
+  const handleEnrollment = async () => {
+    if (!account) return redirectToLogin();
+    if (!course.is_enrolled) return saveEnrollment('add');
+    if (!removeDialog) return;
+    removeMessage.textContent = `${course.title} and its saved lesson progress will be removed from My Courses. If you add it again, progress starts over.`;
+    pendingEnrollmentRemoval = true;
+    removeDialog.showModal();
+  };
+  enrollButtons.forEach((button) => button.addEventListener('click', handleEnrollment));
+  cancelRemoveButton?.addEventListener('click', () => {
+    pendingEnrollmentRemoval = false;
+    removeDialog.close();
+  });
+  confirmRemoveButton?.addEventListener('click', async () => {
+    if (!pendingEnrollmentRemoval) return;
+    confirmRemoveButton.disabled = true;
+    const removed = await saveEnrollment('remove');
+    if (removed) {
+      pendingEnrollmentRemoval = false;
+      removeDialog.close();
+    }
+    confirmRemoveButton.disabled = false;
+  });
+  removeDialog?.addEventListener('click', (event) => {
+    if (event.target === removeDialog) {
+      pendingEnrollmentRemoval = false;
+      removeDialog.close();
+    }
+  });
 
   const wishlistButton = root.querySelector('#wishlist-btn');
   const wishlistIcon = root.querySelector('#wishlist-icon');
   const wishlistLabel = root.querySelector('#wishlist-label');
-  const savedCourses = new Set(getSavedCourseIds());
-  const updateWishlist = (isSaved) => {
-    wishlistButton.setAttribute('aria-pressed', String(isSaved));
-    wishlistIcon.textContent = isSaved ? 'favorite' : 'favorite_border';
-    wishlistIcon.style.fontVariationSettings = isSaved ? "'FILL' 1" : "'FILL' 0";
-    wishlistLabel.textContent = isSaved ? 'Saved in wishlist' : 'Save to wishlist';
-    wishlistButton.classList.toggle('text-error', isSaved);
+  const updateWishlist = () => {
+    wishlistButton.setAttribute('aria-pressed', String(isFavorite));
+    wishlistIcon.textContent = isFavorite ? 'favorite' : 'favorite_border';
+    wishlistIcon.style.fontVariationSettings = isFavorite ? "'FILL' 1" : "'FILL' 0";
+    wishlistLabel.textContent = isFavorite ? 'Saved in wishlist' : 'Save to wishlist';
+    wishlistButton.classList.toggle('text-error', isFavorite);
   };
-  updateWishlist(savedCourses.has(course.id));
-  wishlistButton.addEventListener('click', () => {
-    const isSaved = savedCourses.has(course.id);
-    if (isSaved) savedCourses.delete(course.id);
-    else savedCourses.add(course.id);
-    if (!saveCourseIds([...savedCourses])) {
-      showToast('Could not save this change in this browser.');
-      return;
+  updateWishlist();
+  wishlistButton.addEventListener('click', async () => {
+    if (!account) return redirectToLogin();
+    wishlistButton.disabled = true;
+    try {
+      if (isFavorite) await removeCourseFromFavorites(course.id);
+      else await addCourseToFavorites(course.id);
+      isFavorite = !isFavorite;
+      updateWishlist();
+      showToast(isFavorite ? 'Course added to favorites.' : 'Course removed from favorites.');
+    } catch (error) {
+      if (error.status === 401) redirectToLogin();
+      else showToast(error.message || 'Could not update favorites.');
+    } finally {
+      wishlistButton.disabled = false;
     }
-    updateWishlist(!isSaved);
-    showToast(isSaved ? 'Course removed from your saved courses.' : 'Course saved to your course list.');
   });
 
   root.querySelector('#share-course-btn').addEventListener('click', async () => {
@@ -422,15 +522,10 @@ export function init() {
         root.querySelector('#share-label').textContent = 'Link copied';
         window.setTimeout(() => { root.querySelector('#share-label').textContent = 'Share course'; }, 2500);
         showToast('Course link copied.');
-      } else {
-        showToast(`Share this course: ${window.location.href}`);
-      }
+      } else showToast(`Share this course: ${window.location.href}`);
     } catch (error) {
       if (error.name !== 'AbortError') showToast('Could not share the course link.');
     }
   });
-
-  root.querySelector('#preview-play-btn').addEventListener('click', () => {
-    showToast('A course preview video is not available yet.');
-  });
+  root.querySelector('#preview-play-btn').addEventListener('click', () => showToast('A course preview video is not available yet.'));
 }

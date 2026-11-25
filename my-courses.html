@@ -7,7 +7,21 @@
   <meta name="theme-color" content="#faf8ff" />
   <meta name="description" content="Track your LearnHub courses and continue learning where you left off." />
   <title>My Courses — LearnHub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script>
+    (() => {
+      const root = document.documentElement;
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('theme');
+      } catch {
+        // Use the system preference when browser storage is unavailable.
+      }
+      const isDark = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
+    })();
+  </script><link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/css/output.css" />
@@ -86,8 +100,9 @@
           <p id="results-count" class="text-label-sm text-on-surface-variant dark:text-slate-400" aria-live="polite">0 courses</p>
         </div>
 
-        <!-- Cards are generated from the shared catalog and saved enrollment list. -->
+        <!-- Cards are rendered from the student's course data returned by the API. -->
         <div id="my-course-grid" class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite" aria-busy="true"></div>
+        <nav id="my-course-pagination" class="mt-8 flex items-center justify-center gap-2" aria-label="My Courses pages"></nav>
 
         <div id="my-courses-empty" class="hidden rounded-3xl border border-outline-variant/50 bg-surface-container-low px-5 py-12 text-center dark:border-slate-800 dark:bg-slate-900/60">
           <span id="empty-state-icon" class="material-symbols-outlined mb-3 text-5xl text-outline" aria-hidden="true">school</span>
@@ -106,7 +121,7 @@
         <span class="material-symbols-outlined text-2xl leading-none" aria-hidden="true">delete</span>
       </div>
       <h2 class="mb-2 text-headline-sm font-bold">Remove this course?</h2>
-      <p id="remove-course-message" class="mb-6 text-body-md leading-relaxed text-on-surface-variant dark:text-slate-400">The course will be removed from My Courses. Your lesson progress will stay saved.</p>
+      <p id="remove-course-message" class="mb-6 text-body-md leading-relaxed text-on-surface-variant dark:text-slate-400">Removing a course also removes its lesson progress. Adding it again starts progress over.</p>
       <div class="flex justify-end gap-3">
         <button id="cancel-remove-course" class="min-h-11 rounded-xl px-4 py-2 text-label-lg font-medium text-on-surface-variant hover:bg-surface-container dark:text-slate-300 dark:hover:bg-slate-800" type="button">Cancel</button>
         <button id="confirm-remove-course" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-error px-4 py-2 text-label-lg font-semibold text-white transition hover:opacity-90" type="button"><span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>Remove</button>

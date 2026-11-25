@@ -7,7 +7,21 @@
   <meta name="theme-color" content="#faf8ff" />
   <meta name="description" content="Explore expert-led LearnHub courses in development, design, programming, and data science." />
   <title>Explore Courses — LearnHub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script>
+    (() => {
+      const root = document.documentElement;
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('theme');
+      } catch {
+        // Use the system preference when browser storage is unavailable.
+      }
+      const isDark = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
+    })();
+  </script><link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/css/output.css" />

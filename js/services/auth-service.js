@@ -19,10 +19,24 @@ export async function registerAccount({ fullName, email, password }) {
   return payload;
 }
 
-export function loginAccount({ email, password, rememberMe = false }) {
+export function verifyEmailAddress({ email, code }) {
+  return apiRequest(API_ROUTES.auth.verifyEmail, {
+    method: 'POST',
+    body: { email: email.trim().toLowerCase(), code: String(code).trim() },
+  });
+}
+
+export function resendVerificationCode({ email }) {
+  return apiRequest(API_ROUTES.auth.resendVerification, {
+    method: 'POST',
+    body: { email: email.trim().toLowerCase() },
+  });
+}
+
+export function loginAccount({ email, password }) {
   return apiRequest(API_ROUTES.auth.login, {
     method: 'POST',
-    body: { email: email.trim().toLowerCase(), password, rememberMe },
+    body: { email: email.trim().toLowerCase(), password },
   });
 }
 
@@ -31,5 +45,6 @@ export function logoutAccount() {
 }
 
 export function getCurrentAccount() {
-  return apiRequest(API_ROUTES.auth.currentUser, { method: 'GET' });
+  return apiRequest(API_ROUTES.auth.currentUser, { method: 'GET' })
+    .then((response) => response?.data?.user ?? null);
 }

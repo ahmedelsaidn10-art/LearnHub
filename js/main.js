@@ -3,6 +3,9 @@ import './components/footer/site-footer.js';
 import './components/auth-header/auth-header.js';
 import './components/theme-toggle/theme-toggle.js';
 import './components/mobile-navigation/mobile-navigation.js';
+import { initRevealAnimations } from './utils/reveal-animations.js';
+
+initRevealAnimations();
 
 const pageModules = import.meta.glob('./pages/*.js');
 const pageName = document.body.dataset.page;

@@ -1,11 +1,5 @@
 import { getCourses } from '../services/course-service.js';
-
-// Choose which catalog entries appear in the home page's featured section.
-const featuredCourseIds = [
-  'modern-web-development',
-  'ui-ux-product-design',
-  'python-programming',
-];
+import { initHomeAnimations } from '../utils/home-animations.js';
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -22,7 +16,7 @@ function escapeHtml(value) {
 // Render a featured card from shared course data instead of keeping card HTML in index.html.
 function renderCourseCard(course) {
   return `
-    <article class="group flex flex-col overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-lowest shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
+    <article class="course-card group flex flex-col overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-lowest shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
       <div class="relative h-48 w-full overflow-hidden bg-surface-container dark:bg-slate-800 sm:h-44">
         <img class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" src="${course.image}" alt="${escapeHtml(course.category)} course preview" loading="lazy" />
         <span class="absolute left-3 top-3 rounded-full bg-surface-container-lowest/95 px-2.5 py-1 text-label-sm font-semibold text-primary shadow-xs dark:bg-slate-900/95 dark:text-blue-300">${escapeHtml(course.category)}</span>
@@ -50,18 +44,18 @@ function renderCourseCard(course) {
     </article>`;
 }
 
-export function init() {
+export async function init() {
+  initHomeAnimations();
   const grid = document.querySelector('#featured-course-grid');
   if (!grid) return;
-  const courses = getCourses();
-
-  // Resolve the selected IDs from the shared catalog and render their cards.
-  const featuredCourses = featuredCourseIds
-    .map((id) => courses.find((course) => course.id === id))
-    .filter(Boolean);
-
-  grid.innerHTML = featuredCourses
-    .map((course) => renderCourseCard(course))
-    .join('');
-
+  grid.setAttribute('aria-busy', 'true');
+  try {
+    const courses = await getCourses();
+    grid.innerHTML = courses.slice(0, 3).map(renderCourseCard).join('');
+    if (!courses.length) grid.innerHTML = '<p class="col-span-full text-center text-on-surface-variant">No courses are available yet.</p>';
+  } catch (error) {
+    grid.innerHTML = `<p class="col-span-full rounded-2xl bg-surface-container-low p-6 text-center text-on-surface-variant">${escapeHtml(error.message || 'Courses could not be loaded. Please try again later.')}</p>`;
+  } finally {
+    grid.setAttribute('aria-busy', 'false');
+  }
 }

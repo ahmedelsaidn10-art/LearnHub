@@ -8,7 +8,21 @@
   <meta name="description" content="LearnHub helps you build practical skills with expert-led online courses." />
   <meta name="google-site-verification" content="yQs_h7CmhCymvjjt5Zdyr1fIkJgZdm6AI3VuA2p9sfg" />
   <title>LearnHub — Learn new skills. Build your future.</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script>
+    (() => {
+      const root = document.documentElement;
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('theme');
+      } catch {
+        // Use the system preference when browser storage is unavailable.
+      }
+      const isDark = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
+    })();
+  </script><link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
@@ -99,17 +113,17 @@
               </div>
             </div>
             <!-- Right Column: Visual Frame with Floating Badges -->
-            <div class="lg:col-span-5 relative flex justify-center items-center w-full mt-4 lg:mt-0">
+            <div class="lg:col-span-5 relative flex justify-center items-center w-full mt-4 lg:mt-0" data-hero-parallax>
               <!-- Ambient decorative backdrop circle -->
               <div
                 class="absolute -top-8 -right-8 w-60 sm:w-80 h-60 sm:h-80 rounded-full bg-primary-fixed/40 dark:bg-blue-600/20 blur-3xl pointer-events-none">
               </div>
               <div
-                class="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl bg-surface-container-lowest dark:bg-slate-900 border border-transparent dark:border-slate-800 max-w-lg lg:max-w-none">
+                class="home-hero-card relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl bg-surface-container-lowest dark:bg-slate-900 border border-transparent dark:border-slate-800 max-w-lg lg:max-w-none">
                 <img alt="Group of diverse, smiling students collaborating"
                   class="w-full h-70 sm:h-sm:h-95-[420px] object-cover object-center transition-transform duration-700 hover:scale-105"
                   data-alt="Group of diverse, smiling students celebrating graduation and collaborative online learning with laptops, digital analytics dashboards, and educational achievements in a luminous modern studio"
-                  src="/assets/images/students-collaborating.jpg" />
+                  src="/assets/images/home-hero-v2.jpg" />
                 <!-- Subtle bottom scrim for visual grounding -->
                 <div
                   class="absolute inset-0 bg-linear-to-t from-inverse-surface/40 via-transparent to-transparent pointer-events-none">
@@ -350,14 +364,14 @@
           </div>
         </section>
         <!-- 5. STATISTICS STRIP -->
-        <section class="py-8 sm:py-12 my-4 sm:my-6">
+        <section id="statistics-strip" class="py-8 sm:py-12 my-4 sm:my-6">
           <div
             class="rounded-3xl bg-surface-container-low dark:bg-[#131d33] border border-transparent dark:border-slate-800/80 p-6 sm:p-8 lg:p-12 shadow-xs">
             <!-- 2 columns on mobile/tablet, 4 columns on lg+ -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
               <div class="flex flex-col items-center text-center p-2">
                 <div
-                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight">
+                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight" data-count-target="5000" data-count-suffix="+">
                   5,000+</div>
                 <div
                   class="font-headline-sm text-base sm:text-headline-sm font-semibold text-on-surface dark:text-white mt-1">
@@ -367,7 +381,7 @@
               </div>
               <div class="flex flex-col items-center text-center p-2">
                 <div
-                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight">
+                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight" data-count-target="100" data-count-suffix="+">
                   100+</div>
                 <div
                   class="font-headline-sm text-base sm:text-headline-sm font-semibold text-on-surface dark:text-white mt-1">
@@ -377,7 +391,7 @@
               </div>
               <div class="flex flex-col items-center text-center p-2">
                 <div
-                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight">
+                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight" data-count-target="50" data-count-suffix="+">
                   50+</div>
                 <div
                   class="font-headline-sm text-base sm:text-headline-sm font-semibold text-on-surface dark:text-white mt-1">
@@ -387,7 +401,7 @@
               </div>
               <div class="flex flex-col items-center text-center p-2">
                 <div
-                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight">
+                  class="text-3xl sm:text-4xl lg:text-display-lg text-primary-container dark:text-blue-400 font-bold tracking-tight" data-count-target="20" data-count-suffix="+">
                   20+</div>
                 <div
                   class="font-headline-sm text-base sm:text-headline-sm font-semibold text-on-surface dark:text-white mt-1">

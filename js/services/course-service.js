@@ -1,22 +1,38 @@
-import { courses } from '../data/course-catalog.js';
-import { API_ROUTES } from './app-config.js';
-import { apiRequest } from './api-client.js';
+import { API_ROUTES, assetUrl } from './app-config.js';
+import { apiRequest, getAllPaginatedItems } from './api-client.js';
 
-// Local catalog is the active data source until the backend API is connected.
-export function getCourses() {
-  return courses;
+export function normalizeCourse(course) {
+  if (!course || typeof course !== 'object') return course;
+  return {
+    ...course,
+    id: Number(course.id),
+    price: Number(course.price) || 0,
+    rating: Number(course.rating) || 0,
+    reviewCount: Number(course.reviewCount) || 0,
+    students: Number(course.students) || 0,
+    lessons: Number(course.lessons) || 0,
+    published: Number(course.published) || 0,
+    image: assetUrl(course.image),
+    instructorImage: assetUrl(course.instructorImage),
+    details: {
+      ...(course.details || {}),
+      outcomes: Array.isArray(course.details?.outcomes) ? course.details.outcomes : [],
+      requirements: Array.isArray(course.details?.requirements) ? course.details.requirements : [],
+      subtitles: Array.isArray(course.details?.subtitles)
+        ? course.details.subtitles
+        : course.details?.subtitles ? [course.details.subtitles] : [],
+      curriculum: Array.isArray(course.details?.curriculum) ? course.details.curriculum : [],
+    },
+  };
 }
 
-export function getCourseById(courseId) {
-  return courses.find((course) => course.id === courseId) ?? null;
+export async function getCourses() {
+  const courses = await getAllPaginatedItems(API_ROUTES.courses);
+  return courses.map(normalizeCourse);
 }
 
-// Prepared backend equivalents. Keep these dormant until the backend contract is confirmed.
-export async function getCoursesFromApi() {
-  const payload = await apiRequest(API_ROUTES.courses, { method: 'GET' });
-  return Array.isArray(payload) ? payload : payload?.courses ?? [];
-}
-
-export async function getCourseByIdFromApi(courseId) {
-  return apiRequest(`${API_ROUTES.courses}/${encodeURIComponent(courseId)}`, { method: 'GET' });
+export async function getCourseById(courseId) {
+  if (!courseId || !/^\d+$/.test(String(courseId))) return null;
+  const response = await apiRequest(`${API_ROUTES.courses}/${encodeURIComponent(courseId)}`, { method: 'GET' });
+  return response?.data ? normalizeCourse(response.data) : null;
 }

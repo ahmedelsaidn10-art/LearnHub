@@ -1,6 +1,46 @@
 ﻿/* Shared interaction details used across page components. */
 .theme-toggle-btn { touch-action: manipulation; }
 
+main { animation: page-enter 420ms cubic-bezier(.2, .7, .25, 1) both; }
+
+.motion-reveal {
+  opacity: 0;
+  transform: translate3d(0, 1rem, 0);
+  transition: opacity 520ms cubic-bezier(.2, .7, .25, 1), transform 520ms cubic-bezier(.2, .7, .25, 1), box-shadow 300ms ease;
+  will-change: opacity, transform;
+}
+
+.motion-reveal.is-visible { opacity: 1; transform: translate3d(0, 0, 0); will-change: auto; }
+.course-card:nth-child(3n + 2) { transition-delay: 65ms; }
+.course-card:nth-child(3n + 3) { transition-delay: 120ms; }
+#categories [data-scroll-reveal]:nth-child(2),
+#about [data-scroll-reveal]:nth-child(2),
+#statistics-strip [data-scroll-reveal]:nth-child(2) { transition-delay: 70ms; }
+#categories [data-scroll-reveal]:nth-child(3),
+#about [data-scroll-reveal]:nth-child(3),
+#statistics-strip [data-scroll-reveal]:nth-child(3) { transition-delay: 130ms; }
+#categories [data-scroll-reveal]:nth-child(4),
+#statistics-strip [data-scroll-reveal]:nth-child(4) { transition-delay: 190ms; }
+
+button:not(:disabled):active, a[href]:active { transform: scale(.98); }
+.favorite-course:active .material-symbols-outlined,
+.favorite-course-button:active .material-symbols-outlined { transform: scale(1.2); }
+.favorite-course .material-symbols-outlined,
+.favorite-course-button .material-symbols-outlined { transition: transform 180ms cubic-bezier(.2, .8, .3, 1.4); }
+[role='progressbar'] > div { transition: width 700ms cubic-bezier(.2, .7, .25, 1); }
+.home-hero-card { transform-style: preserve-3d; transition: transform 220ms cubic-bezier(.2, .7, .25, 1); will-change: transform; }
+
+@keyframes page-enter {
+  from { opacity: .82; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  main { animation: none; }
+  .motion-reveal { opacity: 1; transform: none; will-change: auto; }
+}
+
 #mobile-drawer-backdrop[aria-hidden='false'] { pointer-events: auto; }
 
 .toast-region {
@@ -108,6 +148,24 @@ auth-header { display: block; }
 .dark .auth-alert-error { border-color: #723c46; background: #351b24; color: #ffb3b8; }
 .dark .auth-alert-success { border-color: #275c48; background: #102c22; color: #a1edc6; }
 .auth-alert .material-symbols-outlined { flex: 0 0 auto; font-size: 1.15rem; }
+.auth-verification-copy { margin: 0 0 .8rem; color: #69748b; font-size: .85rem; line-height: 1.55; }
+.dark .auth-verification-copy { color: #aab4c5; }
+.auth-verification-copy strong { color: #26314a; overflow-wrap: anywhere; }
+.dark .auth-verification-copy strong { color: #e1e7f0; }
+#verification-code { text-align: center; font-size: 1.15rem; font-weight: 700; letter-spacing: .45em; }
+.auth-text-button { display: block; margin: 1rem auto 0; padding: .4rem .6rem; border: 0; background: transparent; color: #425bd3; font: inherit; font-size: .82rem; font-weight: 650; cursor: pointer; }
+.dark .auth-text-button { color: #a7b4ff; }
+.auth-text-button:hover { text-decoration: underline; }
+.auth-text-button:disabled { cursor: wait; opacity: .65; }
+.auth-submit-link { text-decoration: none; }
+.auth-submit-link .material-symbols-outlined { font-size: 1.15rem; }
+.auth-page [hidden] { display: none !important; }
+.login-verification { margin-top: 1.15rem; padding-top: .9rem; border-top: 1px solid #e0e4ed; text-align: center; }
+.dark .login-verification { border-color: #344056; }
+.login-verification > p { margin: 0; color: #69748b; font-size: .78rem; }
+.dark .login-verification > p { color: #aab4c5; }
+.login-verification .auth-text-button { margin-top: .35rem; }
+.login-verification .auth-form { margin-top: .8rem; text-align: left; }
 @media (max-width: 900px) {
   .auth-layout { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
   .auth-visual { padding: 2rem; }
@@ -125,7 +183,3 @@ auth-header { display: block; }
 }
 .auth-login-password-label { display: flex; align-items: center; justify-content: space-between; }
 .auth-login-password-label label { margin-bottom: .4rem; }
-.auth-remember-row { margin: .1rem 0 .2rem; }
-.auth-remember-row label { display: inline-flex; align-items: center; gap: .55rem; color: #667188; font-size: .78rem; cursor: pointer; }
-.dark .auth-remember-row label { color: #b2bdce; }
-.auth-remember-row input { width: 1rem; height: 1rem; margin: 0; accent-color: #4e63dc; }

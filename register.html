@@ -6,7 +6,21 @@
   <meta name="theme-color" content="#f7f8fc" />
   <meta name="description" content="Create a LearnHub account and start learning practical skills." />
   <title>Create account | LearnHub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script>
+    (() => {
+      const root = document.documentElement;
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('theme');
+      } catch {
+        // Use the system preference when browser storage is unavailable.
+      }
+      const isDark = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b0f19' : '#faf8ff');
+    })();
+  </script><link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/css/output.css" />
@@ -16,7 +30,7 @@
   <main class="auth-layout">
     <!-- A calm visual panel complements the focused account form. -->
     <aside class="auth-visual" aria-label="LearnHub learning community">
-      <img src="/assets/images/students-collaborating.jpg" alt="Students collaborating around a laptop" />
+      <img src="/assets/images/register-community.jpg" alt="Students learning together around a laptop" />
       <div class="auth-visual-shade"></div>
       <div class="auth-visual-copy">
         <span class="auth-eyebrow"><span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span> LEARN SOMETHING NEW</span>
@@ -30,9 +44,9 @@
       <div class="auth-form-wrap">
         <div class="auth-heading">
           <span class="auth-mobile-mark"><img src="/assets/icons/learnhub-logo.svg" alt="" /></span>
-          <p class="auth-kicker">CREATE YOUR ACCOUNT</p>
+          <p id="register-kicker" class="auth-kicker">CREATE YOUR ACCOUNT</p>
           <h2 id="register-title">Start learning today</h2>
-          <p>Set up your account to save courses and track your progress.</p>
+          <p id="register-description">Set up your account to save courses and track your progress.</p>
         </div>
 
         <div id="register-error-banner" class="auth-alert auth-alert-error" role="alert" aria-live="polite" hidden>
@@ -69,7 +83,24 @@
           <button id="register-submit" class="auth-submit" type="submit"><span class="auth-submit-label">Create account</span><span class="auth-submit-spinner" aria-hidden="true"></span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
         </form>
 
-        <p class="auth-switch">Already have an account? <a href="/login.html">Sign in</a></p>
+        <section id="email-verification" hidden aria-labelledby="register-title">
+          <form id="verification-form" class="auth-form" novalidate>
+            <div class="auth-field">
+              <p class="auth-verification-copy">We sent a six-digit code to <strong id="verification-email"></strong>. Enter it below to activate your account.</p>
+              <label for="verification-code">Verification code</label>
+              <div class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">pin</span><input id="verification-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required aria-describedby="verification-code-error" /></div>
+              <p class="auth-field-error" id="verification-code-error"></p>
+            </div>
+            <button id="verify-submit" class="auth-submit" type="submit"><span class="auth-submit-label">Verify email</span><span class="auth-submit-spinner" aria-hidden="true"></span><span class="material-symbols-outlined" aria-hidden="true">verified</span></button>
+          </form>
+          <button id="resend-code" class="auth-text-button" type="button">Resend code</button>
+        </section>
+
+        <div id="email-verified" class="auth-verified" hidden>
+          <a class="auth-submit auth-submit-link" href="/login.html">Continue to sign in <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
+        </div>
+
+        <p id="register-switch" class="auth-switch">Already have an account? <a href="/login.html">Sign in</a></p>
         <p class="auth-legal">By creating an account, you agree to LearnHub’s terms and privacy policy.</p>
       </div>
     </section>

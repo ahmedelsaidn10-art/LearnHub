@@ -17,16 +17,19 @@ async function readPayload(response) {
 
 // Shared request handling keeps API URL, credentials, JSON, and errors consistent.
 export async function apiRequest(path, { body, headers = {}, ...options } = {}) {
-  if (!API_BASE_URL) throw new ApiError('Set VITE_API_BASE_URL before making API requests.');
-
   let response;
   try {
+    const method = (options.method || 'GET').toUpperCase();
+    const csrfToken = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
+      ? ''
+      : document.cookie.split('; ').find((cookie) => cookie.startsWith('csrf_access_token='))?.split('=').slice(1).join('=') || '';
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       credentials: 'include',
       headers: {
         Accept: 'application/json',
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(csrfToken ? { 'X-CSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
         ...headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -36,11 +39,26 @@ export async function apiRequest(path, { body, headers = {}, ...options } = {}) 
   }
 
   const payload = await readPayload(response);
-  if (!response.ok) {
-    throw new ApiError(payload?.message || `The server returned an error (${response.status}).`, {
+  if (!response.ok || payload?.success === false) {
+    throw new ApiError(payload?.message || payload?.msg || `The server returned an error (${response.status}).`, {
       status: response.status,
       payload,
     });
   }
   return payload;
+}
+
+export async function getAllPaginatedItems(path) {
+  const firstPage = await apiRequest(`${path}?page=1`, { method: 'GET' });
+  const firstData = firstPage?.data;
+  if (!Array.isArray(firstData?.items)) return [];
+
+  const totalPages = Math.max(1, Number(firstData.pagination?.totalPages) || 1);
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      apiRequest(`${path}?page=${index + 2}`, { method: 'GET' })),
+  );
+
+  return [firstData, ...remainingPages.map((response) => response?.data)]
+    .flatMap((page) => Array.isArray(page?.items) ? page.items : []);
 }
