@@ -1,5 +1,6 @@
 import { getCourses } from '../services/course-service.js';
 import { initHomeAnimations } from '../utils/home-animations.js';
+import { renderLoadingIndicator } from '../utils/loading-state.js';
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -49,6 +50,7 @@ export async function init() {
   const grid = document.querySelector('#featured-course-grid');
   if (!grid) return;
   grid.setAttribute('aria-busy', 'true');
+  renderLoadingIndicator(grid, 'Loading featured courses...');
   try {
     const courses = await getCourses();
     grid.innerHTML = courses.slice(0, 3).map(renderCourseCard).join('');

@@ -10,6 +10,7 @@ import {
   updateLessonProgress,
 } from '../services/learning-service.js';
 import { redirectToLogin } from '../utils/auth-navigation.js';
+import { setButtonLoading } from '../utils/loading-state.js';
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -63,7 +64,7 @@ function curriculumMarkup(sections, completedLessons, canTrackProgress) {
           const lessonId = typeof lesson === 'string' ? '' : String(lesson.id);
           const isDone = completedLessons.has(lessonId);
           const button = canTrackProgress && lessonId
-            ? `<button class="lesson-done-button shrink-0 rounded-lg border px-3 py-1.5 text-label-sm font-semibold transition ${isDone ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary dark:border-slate-600 dark:text-slate-300 dark:hover:border-blue-400 dark:hover:text-blue-300'}" type="button" data-lesson-id="${escapeHtml(lessonId)}" aria-pressed="${isDone}" aria-label="${isDone ? 'Mark as not done' : 'Mark as done'}: ${escapeHtml(lessonTitle)}">${isDone ? 'Done ?' : 'Done'}</button>`
+            ? `<button class="lesson-done-button shrink-0 rounded-lg border px-3 py-1.5 text-label-sm font-semibold transition ${isDone ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700' : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary dark:border-slate-600 dark:text-slate-300 dark:hover:border-blue-400 dark:hover:text-blue-300'}" type="button" data-lesson-id="${escapeHtml(lessonId)}" aria-pressed="${isDone}" aria-label="${isDone ? 'Mark as not done' : 'Mark as done'}: ${escapeHtml(lessonTitle)}"><span data-button-label>${isDone ? 'Done ?' : 'Done'}</span></button>`
             : '';
           return `<li class="flex items-center gap-2 text-body-md text-on-surface-variant dark:text-slate-300">
             <span class="material-symbols-outlined text-base ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary dark:text-blue-300'}" aria-hidden="true">${isDone ? 'check_circle' : 'play_circle'}</span>
@@ -289,7 +290,9 @@ function updateEnrollment(button, isEnrolled) {
 function updateLessonButton(button, isDone) {
   button.setAttribute('aria-pressed', String(isDone));
   button.setAttribute('aria-label', `${isDone ? 'Mark as not done' : 'Mark as done'}: ${button.closest('li')?.querySelector('span.flex-1')?.textContent.trim() || 'lesson'}`);
-  button.textContent = isDone ? 'Done ✓' : 'Done';
+  const label = button.querySelector('[data-button-label]');
+  if (label) label.textContent = isDone ? 'Done ✓' : 'Done';
+  else button.textContent = isDone ? 'Done ✓' : 'Done';
 
   const completedClasses = ['border-emerald-600', 'bg-emerald-600', 'text-white', 'hover:bg-emerald-700'];
   const pendingClasses = ['border-outline-variant', 'text-on-surface-variant', 'hover:border-primary', 'hover:text-primary', 'dark:border-slate-600', 'dark:text-slate-300', 'dark:hover:border-blue-400', 'dark:hover:text-blue-300'];
@@ -398,7 +401,7 @@ export async function init() {
 
     const lessonId = button.dataset.lessonId;
     const isDone = completedLessons.has(lessonId);
-    button.disabled = true;
+    setButtonLoading(button, true, 'Saving...');
     try {
       const result = await updateLessonProgress(course.id, lessonId, !isDone);
       if (isDone) completedLessons.delete(lessonId);
@@ -413,7 +416,8 @@ export async function init() {
       if (error.status === 401) redirectToLogin();
       else showToast(error.message || 'Could not save lesson progress.');
     } finally {
-      button.disabled = false;
+      setButtonLoading(button, false);
+      updateLessonButton(button, completedLessons.has(lessonId));
     }
   });
 
@@ -440,7 +444,7 @@ export async function init() {
   let pendingEnrollmentRemoval = false;
   enrollButtons.forEach((button) => updateEnrollment(button, Boolean(course.is_enrolled)));
   const saveEnrollment = async (action) => {
-    enrollButtons.forEach((item) => { item.disabled = true; });
+    enrollButtons.forEach((item) => setButtonLoading(item, true, action === 'add' ? 'Adding...' : 'Removing...'));
     try {
       if (action === 'remove') await removeCourseFromMyCourses(course.id);
       else await addCourseToMyCourses(course.id);
@@ -452,7 +456,10 @@ export async function init() {
       else showToast(error.message || 'Could not update My Courses.');
       return false;
     } finally {
-      enrollButtons.forEach((item) => { item.disabled = false; });
+      enrollButtons.forEach((item) => {
+        setButtonLoading(item, false);
+        updateEnrollment(item, Boolean(course.is_enrolled));
+      });
     }
   };
   const handleEnrollment = async () => {
@@ -470,13 +477,13 @@ export async function init() {
   });
   confirmRemoveButton?.addEventListener('click', async () => {
     if (!pendingEnrollmentRemoval) return;
-    confirmRemoveButton.disabled = true;
+    setButtonLoading(confirmRemoveButton, true, 'Removing...');
     const removed = await saveEnrollment('remove');
     if (removed) {
       pendingEnrollmentRemoval = false;
       removeDialog.close();
     }
-    confirmRemoveButton.disabled = false;
+    setButtonLoading(confirmRemoveButton, false);
   });
   removeDialog?.addEventListener('click', (event) => {
     if (event.target === removeDialog) {
@@ -498,7 +505,7 @@ export async function init() {
   updateWishlist();
   wishlistButton.addEventListener('click', async () => {
     if (!account) return redirectToLogin();
-    wishlistButton.disabled = true;
+    setButtonLoading(wishlistButton, true, 'Saving...');
     try {
       if (isFavorite) await removeCourseFromFavorites(course.id);
       else await addCourseToFavorites(course.id);
@@ -509,7 +516,7 @@ export async function init() {
       if (error.status === 401) redirectToLogin();
       else showToast(error.message || 'Could not update favorites.');
     } finally {
-      wishlistButton.disabled = false;
+      setButtonLoading(wishlistButton, false);
     }
   });
 

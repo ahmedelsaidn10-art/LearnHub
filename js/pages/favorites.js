@@ -3,6 +3,7 @@ import { createPagination, getPageRange } from '../components/pagination/paginat
 import { getCurrentAccount } from '../services/auth-service.js';
 import { getFavorites, removeCourseFromFavorites } from '../services/learning-service.js';
 import { redirectToLogin } from '../utils/auth-navigation.js';
+import { renderLoadingIndicator, setButtonLoading } from '../utils/loading-state.js';
 
 const PAGE_SIZE = 6;
 
@@ -36,11 +37,14 @@ export async function init() {
   if (!grid || !emptyState || !count || !resultCount || !search || !filters || !pagination || !dialog) return;
 
   grid.setAttribute('aria-busy', 'true');
+  renderLoadingIndicator(grid, 'Loading your favorites...');
   try {
     const account = await getCurrentAccount();
     if (!account) return redirectToLogin();
   } catch (error) {
     if (error.status === 401) return redirectToLogin();
+    grid.replaceChildren();
+    grid.classList.add('hidden');
     grid.setAttribute('aria-busy', 'false');
     showToast(error.message || 'Could not check your account.');
     return;
@@ -51,6 +55,8 @@ export async function init() {
     favoriteCourses = await getFavorites();
   } catch (error) {
     if (error.status === 401) return redirectToLogin();
+    grid.replaceChildren();
+    grid.classList.add('hidden');
     grid.setAttribute('aria-busy', 'false');
     emptyState.classList.remove('hidden');
     emptyState.querySelector('h2').textContent = 'Could not load favorites';
@@ -137,7 +143,7 @@ export async function init() {
   document.querySelector('#confirm-remove-favorite').addEventListener('click', async (event) => {
     if (!pendingRemovalId) return;
     const button = event.currentTarget;
-    button.disabled = true;
+    setButtonLoading(button, true, 'Removing...');
     try {
       await removeCourseFromFavorites(pendingRemovalId);
       favoriteCourses = favoriteCourses.filter((course) => course.id !== pendingRemovalId);
@@ -150,7 +156,7 @@ export async function init() {
       if (error.status === 401) redirectToLogin();
       else showToast(error.message || 'Could not remove this course.');
     } finally {
-      button.disabled = false;
+      setButtonLoading(button, false);
     }
   });
   dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

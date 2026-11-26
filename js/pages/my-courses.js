@@ -7,6 +7,7 @@ import {
 } from '../services/learning-service.js';
 import { createPagination, getPageRange } from '../components/pagination/pagination.js';
 import { redirectToLogin } from '../utils/auth-navigation.js';
+import { renderLoadingIndicator, setButtonLoading } from '../utils/loading-state.js';
 
 const PAGE_SIZE = 6;
 
@@ -99,11 +100,14 @@ export async function init() {
   if (!grid || !emptyState || !search || !sort || !dialog || !pagination) return;
 
   grid.setAttribute('aria-busy', 'true');
+  renderLoadingIndicator(grid, 'Loading your courses...');
   let account;
   try {
     account = await getCurrentAccount();
   } catch (error) {
     if (error.status === 401) return redirectToLogin();
+    grid.replaceChildren();
+    grid.classList.add('hidden');
     grid.setAttribute('aria-busy', 'false');
     showToast(error.message || 'Could not check your account.');
     return;
@@ -115,6 +119,8 @@ export async function init() {
     enrolledCourses = await getMyCourses();
   } catch (error) {
     if (error.status === 401) return redirectToLogin();
+    grid.replaceChildren();
+    grid.classList.add('hidden');
     grid.setAttribute('aria-busy', 'false');
     emptyState.classList.remove('hidden');
     document.querySelector('#empty-state-title').textContent = 'Could not load your courses';
@@ -211,7 +217,7 @@ export async function init() {
       const courseId = Number(favoriteButton.dataset.favoriteCourse);
       const course = enrolledCourses.find((item) => item.id === courseId);
       if (!course) return;
-      favoriteButton.disabled = true;
+      setButtonLoading(favoriteButton, true, 'Saving...');
       try {
         if (course.is_favorite) await removeCourseFromFavorites(courseId);
         else await addCourseToFavorites(courseId);
@@ -221,7 +227,8 @@ export async function init() {
       } catch (error) {
         if (error.status === 401) redirectToLogin();
         else showToast(error.message || 'Could not update favorites.');
-        favoriteButton.disabled = false;
+      } finally {
+        setButtonLoading(favoriteButton, false);
       }
       return;
     }
@@ -238,7 +245,7 @@ export async function init() {
   document.querySelector('#confirm-remove-course').addEventListener('click', async (event) => {
     if (!pendingRemovalId) return;
     const button = event.currentTarget;
-    button.disabled = true;
+    setButtonLoading(button, true, 'Removing...');
     const course = enrolledCourses.find((item) => item.id === pendingRemovalId);
     try {
       await removeCourseFromMyCourses(pendingRemovalId);
@@ -251,7 +258,7 @@ export async function init() {
       if (error.status === 401) redirectToLogin();
       else showToast(error.message || 'Could not remove this course.');
     } finally {
-      button.disabled = false;
+      setButtonLoading(button, false);
     }
   });
   dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

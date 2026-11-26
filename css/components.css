@@ -1,6 +1,34 @@
 ﻿/* Shared interaction details used across page components. */
 .theme-toggle-btn { touch-action: manipulation; }
 
+/* Shared loading feedback for API actions and page sections. */
+.button-loading-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-loading-spin .7s linear infinite;
+}
+
+button.is-button-loading { cursor: wait; opacity: .82; }
+button.is-button-loading .material-symbols-outlined { display: none; }
+
+.page-loading-state {
+  grid-column: 1 / -1;
+  display: flex;
+  min-height: 10rem;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  color: var(--color-on-surface-variant, #525a6a);
+  font-size: .95rem;
+}
+
+@keyframes button-loading-spin { to { transform: rotate(360deg); } }
+
 main { animation: page-enter 420ms cubic-bezier(.2, .7, .25, 1) both; }
 
 .motion-reveal {

@@ -34,7 +34,7 @@
   <main class="flex-1 pt-20">
     <!-- The page module replaces this state with the course selected in the URL. -->
     <div id="course-details-root" class="mx-auto min-h-[60vh] max-w-7xl px-4 py-20 text-center sm:px-6 lg:px-8" aria-live="polite" aria-busy="true">
-      <p class="text-body-lg text-on-surface-variant dark:text-slate-400">Loading course details…</p>
+      <div class="page-loading-state" role="status"><span class="button-loading-spinner" aria-hidden="true"></span><p class="text-body-lg text-on-surface-variant dark:text-slate-400">Loading course details…</p></div>
     </div>
   </main>
 
@@ -47,7 +47,7 @@
       <p id="remove-enrollment-message" class="mb-6 text-body-md leading-relaxed text-on-surface-variant dark:text-slate-400">Removing a course also removes its lesson progress. Adding it again starts progress over.</p>
       <div class="flex justify-end gap-3">
         <button id="cancel-remove-enrollment" class="min-h-11 rounded-xl px-4 py-2 text-label-lg font-medium text-on-surface-variant hover:bg-surface-container dark:text-slate-300 dark:hover:bg-slate-800" type="button">Cancel</button>
-        <button id="confirm-remove-enrollment" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-error px-4 py-2 text-label-lg font-semibold text-white transition hover:opacity-90" type="button"><span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>Remove</button>
+        <button id="confirm-remove-enrollment" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-error px-4 py-2 text-label-lg font-semibold text-white transition hover:opacity-90" type="button"><span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span><span data-button-label>Remove</span></button>
       </div>
     </div>
   </dialog>

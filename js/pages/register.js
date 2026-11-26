@@ -3,6 +3,7 @@ import {
   resendVerificationCode,
   verifyEmailAddress,
 } from '../services/auth-service.js';
+import { setButtonLoading } from '../utils/loading-state.js';
 
 const fieldRules = [
   { input: 'register-name', error: 'name-error', validate: (value) => value.trim().length >= 2 ? '' : 'Enter your full name (at least 2 characters).' },
@@ -179,8 +180,7 @@ function init() {
 
   resendButton.addEventListener('click', async () => {
     clearNotices();
-    resendButton.disabled = true;
-    resendButton.setAttribute('aria-busy', 'true');
+    setButtonLoading(resendButton, true, 'Sending code...');
     try {
       await resendVerificationCode({ email: verificationEmail });
       verificationCode.value = '';
@@ -189,8 +189,7 @@ function init() {
     } catch (error) {
       showError(error.message || 'We could not send a new code. Please try again.');
     } finally {
-      resendButton.disabled = false;
-      resendButton.removeAttribute('aria-busy');
+      setButtonLoading(resendButton, false);
     }
   });
 }

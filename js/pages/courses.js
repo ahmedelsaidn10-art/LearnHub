@@ -4,6 +4,7 @@ import { addCourseToFavorites, getFavorites, removeCourseFromFavorites } from '.
 import { courseCardMarkup, escapeHtml } from '../components/course-card/course-card.js';
 import { createPagination, getPageRange } from '../components/pagination/pagination.js';
 import { redirectToLogin } from '../utils/auth-navigation.js';
+import { renderLoadingIndicator, setButtonLoading } from '../utils/loading-state.js';
 
 const PAGE_SIZE = 6;
 
@@ -38,6 +39,7 @@ export async function init() {
   if (!grid || !count || !search || !sort || !level || !price || !pagination || !emptyState || !categoryContainer) return;
 
   grid.setAttribute('aria-busy', 'true');
+  renderLoadingIndicator(grid, 'Loading courses...');
   let courses;
   let favorites = new Set();
   try {
@@ -50,6 +52,8 @@ export async function init() {
     }
   } catch (error) {
     count.textContent = 'Courses could not be loaded.';
+    grid.replaceChildren();
+    grid.classList.add('hidden');
     emptyState.classList.remove('hidden');
     emptyState.querySelector('h3').textContent = 'Could not load courses';
     emptyState.querySelector('p').textContent = error.message || 'Check that the API server is running and try again.';
@@ -161,7 +165,7 @@ export async function init() {
     if (!button) return;
     const courseId = Number(button.dataset.courseId);
     const isFavorite = favorites.has(String(courseId));
-    button.disabled = true;
+    setButtonLoading(button, true, 'Saving...');
     try {
       if (isFavorite) await removeCourseFromFavorites(courseId);
       else await addCourseToFavorites(courseId);
@@ -172,7 +176,8 @@ export async function init() {
     } catch (error) {
       if (error.status === 401) redirectToLogin();
       else showToast(error.message || 'Could not update your favorites.');
-      button.disabled = false;
+    } finally {
+      setButtonLoading(button, false);
     }
   });
 

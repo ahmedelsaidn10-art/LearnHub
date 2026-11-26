@@ -1,6 +1,7 @@
 ﻿import template from './site-header.html?raw';
 import logoUrl from '../../../assets/icons/learnhub-logo.svg?url';
 import { getCurrentAccount, logoutAccount } from '../../services/auth-service.js';
+import { setButtonLoading } from '../../utils/loading-state.js';
 
 const activeLinkClasses = 'px-5 py-2 rounded-full transition-all text-primary-container bg-surface-container dark:bg-slate-700/80 dark:text-white font-label-lg text-label-lg font-semibold shadow-xs';
 const defaultLinkClasses = 'px-5 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant dark:text-slate-300 hover:text-on-surface dark:hover:text-white hover:bg-surface-container dark:hover:bg-slate-700/50 transition-all';
@@ -38,7 +39,7 @@ class SiteHeader extends HTMLElement {
     });
     this.querySelectorAll('[data-logout]').forEach((button) => {
       button.addEventListener('click', async () => {
-        button.disabled = true;
+        setButtonLoading(button, true, 'Signing out...');
         try {
           await logoutAccount();
         } catch {

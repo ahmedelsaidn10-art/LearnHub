@@ -3,8 +3,13 @@ import {
   resendVerificationCode,
   verifyEmailAddress,
 } from '../services/auth-service.js';
+import { setButtonLoading } from '../utils/loading-state.js';
 
 function setBusy(button, busy) {
+  if (!button.classList.contains('auth-submit')) {
+    setButtonLoading(button, busy, busy ? 'Sending code...' : '');
+    return;
+  }
   button.disabled = busy;
   button.classList.toggle('is-loading', busy);
   button.setAttribute('aria-busy', String(busy));
